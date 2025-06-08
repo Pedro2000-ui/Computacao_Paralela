@@ -12,15 +12,21 @@ int max_sequencial(int *v, int n) {
 }
 
 int max_paralelo_arvore(int *v, int n) {
-    int step;
-    for (step = 1; step < n; step *= 2) {
+    int *temp = malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) temp[i] = v[i];
+
+    for (int step = 1; step < n; step *= 2) {
         #pragma omp parallel for
         for (int i = 0; i + step < n; i += 2 * step) {
-            if (v[i] < v[i + step])
-                v[i] = v[i + step];
+            if (temp[i] < temp[i + step]) {
+                temp[i] = temp[i + step];
+            }
         }
     }
-    return v[0];
+
+    int max = temp[0];
+    free(temp);
+    return max;
 }
 
 int max_paralelo_reducao_manual(int *v, int n) {
