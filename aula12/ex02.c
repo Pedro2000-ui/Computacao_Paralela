@@ -75,13 +75,14 @@ int main() {
     // Verifica se está ordenado corretamente
     int sorted = 1;
     for (int i = 1; i < n; i++) {
+        printf("%d ", arr[i]);
         if (arr[i] < arr[i - 1]) {
             sorted = 0;
             break;
         }
     }
 
-    printf("Vetor ordenado? %s\n", sorted ? "Sim" : "Não");
+    printf("\n\n Vetor ordenado? %s\n", sorted ? "Sim" : "Não");
 
     free(arr);
     free(temp);
