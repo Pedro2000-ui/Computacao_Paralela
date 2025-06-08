@@ -3,20 +3,27 @@
 #include <omp.h>
 
 #define MAXN 1000
+#define MAX_CHILD 100
 
-typedef struct Node {
-    int vertex;
-    struct Node* next;
+typedef struct {
+    int children[MAX_CHILD];
+    int child_count;
 } Node;
 
-Node* adj[MAXN];
-int n; // número de nós
+Node tree[MAXN];
+int n;
 
-// Função para contar tamanho do Euler tour da subárvore em u
+// Adiciona filho mantendo ordem
+void addEdge(int u, int v) {
+    tree[u].children[tree[u].child_count++] = v;
+    tree[v].children[tree[v].child_count++] = u;
+}
+
+// Contar tamanho do Euler tour da subárvore em u
 int eulerSize(int u, int parent) {
     int size = 1; // visita o nó u
-    for (Node* cur = adj[u]; cur != NULL; cur = cur->next) {
-        int v = cur->vertex;
+    for (int i = 0; i < tree[u].child_count; i++) {
+        int v = tree[u].children[i];
         if (v != parent) {
             size += eulerSize(v, u) + 1; // filho + retorno ao u
         }
@@ -24,27 +31,25 @@ int eulerSize(int u, int parent) {
     return size;
 }
 
-// Função paralela para construir Euler Tour
+// Euler Tour paralelo
 void eulerTourParallel(int u, int parent, int* euler, int* pos) {
-    int idx = pos[0];   // posição inicial para escrever u
+    int idx = pos[0];
     euler[idx] = u;
     pos[0]++;
 
-    Node* cur = adj[u];
-    // Criar array para armazenar tamanho de cada subárvore dos filhos
     int child_count = 0;
-    int children[100];    // até 100 filhos
+    int children[MAX_CHILD];
 
-    while(cur) {
-        int v = cur->vertex;
-        if(v != parent) {
+    // Filhos exceto o pai
+    for (int i = 0; i < tree[u].child_count; i++) {
+        int v = tree[u].children[i];
+        if (v != parent) {
             children[child_count++] = v;
         }
-        cur = cur->next;
     }
 
     int* child_sizes = malloc(child_count * sizeof(int));
-    
+
     // Conta os tamanhos em paralelo
     #pragma omp parallel for
     for (int i = 0; i < child_count; i++) {
@@ -52,18 +57,17 @@ void eulerTourParallel(int u, int parent, int* euler, int* pos) {
     }
 
     int offset = pos[0];
-    // Processar filhos em paralelo
+
+    // Processa filhos em paralelo
     #pragma omp parallel for
     for (int i = 0; i < child_count; i++) {
         int child_pos = offset;
-        // Calcular deslocamento
         for (int j = 0; j < i; j++) {
-            child_pos += child_sizes[j] + 1;  // +1 pelo retorno ao pai
+            child_pos += child_sizes[j] + 1;
         }
         int local_pos = child_pos;
         eulerTourParallel(children[i], u, euler, &local_pos);
-        // Voltar ao pai após visitar filho
-        euler[local_pos] = u;
+        euler[local_pos] = u; // volta para o pai
     }
 
     pos[0] = offset;
@@ -74,31 +78,19 @@ void eulerTourParallel(int u, int parent, int* euler, int* pos) {
     free(child_sizes);
 }
 
-void addEdge(int u, int v) {
-    Node* node = malloc(sizeof(Node));
-    node->vertex = v;
-    node->next = adj[u];
-    adj[u] = node;
-
-    node = malloc(sizeof(Node));
-    node->vertex = u;
-    node->next = adj[v];
-    adj[v] = node;
-}
-
 int main() {
     n = 7;
 
     for (int i = 0; i < n; i++) {
-        adj[i] = NULL;
+        tree[i].child_count = 0;
     }
 
-    addEdge(0,1);
-    addEdge(0,2);
-    addEdge(1,3);
-    addEdge(1,4);
-    addEdge(2,5);
-    addEdge(2,6);
+    addEdge(0, 1);
+    addEdge(0, 2);
+    addEdge(1, 3);
+    addEdge(1, 4);
+    addEdge(2, 5);
+    addEdge(2, 6);
 
     int size = eulerSize(0, -1);
     int *euler = malloc(size * sizeof(int));
@@ -106,7 +98,7 @@ int main() {
     int pos = 0;
     eulerTourParallel(0, -1, euler, &pos);
 
-    printf("Euler Tour paralelo:\n");
+    printf("Euler Tour paralelo (ordem natural dos filhos):\n");
     for (int i = 0; i < size; i++) {
         printf("%d ", euler[i]);
     }
