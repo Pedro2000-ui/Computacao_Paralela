@@ -11,23 +11,23 @@ int max_sequencial(int *v, int n) {
     return max;
 }
 
-int max_paralelo_arvore(int *v, int n) {
-    int *temp = malloc(n * sizeof(int));
-    for (int i = 0; i < n; i++) temp[i] = v[i];
+// int max_paralelo_arvore(int *v, int n) {
+//     int *temp = malloc(n * sizeof(int));
+//     for (int i = 0; i < n; i++) temp[i] = v[i];
 
-    for (int step = 1; step < n; step *= 2) {
-        #pragma omp parallel for
-        for (int i = 0; i + step < n; i += 2 * step) {
-            if (temp[i] < temp[i + step]) {
-                temp[i] = temp[i + step];
-            }
-        }
-    }
+//     for (int step = 1; step < n; step *= 2) {
+//         #pragma omp parallel for
+//         for (int i = 0; i + step < n; i += 2 * step) {
+//             if (temp[i] < temp[i + step]) {
+//                 temp[i] = temp[i + step];
+//             }
+//         }
+//     }
 
-    int max = temp[0];
-    free(temp);
-    return max;
-}
+//     int max = temp[0];
+//     free(temp);
+//     return max;
+// }
 
 int max_paralelo_reducao_manual(int *v, int n) {
     int *temp = malloc(n * sizeof(int));
@@ -89,7 +89,7 @@ int main() {
     int v[] = {1, 5, 8, 3, 9, 2, 10, 7, 6, 4, 12, 11, 14, 0, 13, 15};
 
     printf("Máximo Sequencial: %d\n", max_sequencial(v, n));
-    printf("Máximo Paralelo Árvore: %d\n", max_paralelo_arvore(v, n));
+    // printf("Máximo Paralelo Árvore: %d\n", max_paralelo_arvore(v, n));
     printf("Máximo Paralelo Redução Manual: %d\n", max_paralelo_reducao_manual(v, n));
     printf("Máximo Paralelo Brent: %d\n", max_paralelo_brent(v, n));
 
