@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <omp.h>
 
+// Função de comparação para inteiros
+int cmp_int(const void *a, const void *b) {
+    int x = *(int *)a;
+    int y = *(int *)b;
+    return (x > y) - (x < y);  // ou: return x - y;
+}
+
 // Merge sequencial
 void merge(int *arr, int *temp, int left, int mid, int right) {
     int i = left, j = mid, k = left;
@@ -17,12 +24,11 @@ void merge(int *arr, int *temp, int left, int mid, int right) {
     }
 }
 
-// Split sort recursivo paralelo
+// Split sort paralelo
 void split_sort(int *arr, int *temp, int left, int right, int threshold) {
     int n = right - left;
     if (n <= threshold) {
-        // Ordena sequencialmente (qsort)
-        qsort(arr + left, n, sizeof(int), (int (*)(const void*,const void*)) strcmp);
+        qsort(arr + left, n, sizeof(int), cmp_int);
         return;
     }
 
@@ -40,8 +46,8 @@ void split_sort(int *arr, int *temp, int left, int right, int threshold) {
 }
 
 int main() {
-    int n = 1 << 16;  // tamanho do vetor (potência de 2)
-    int threshold = 1024;  // limite para ordenar sequencialmente
+    int n = 1 << 16;  // 65536 elementos
+    int threshold = 1024;  // abaixo disso, ordena sequencialmente
 
     int *arr = malloc(n * sizeof(int));
     int *temp = malloc(n * sizeof(int));
@@ -52,7 +58,7 @@ int main() {
         arr[i] = rand() % 100000;
     }
 
-    printf("Iniciando split sort paralelo...\n");
+    printf("Iniciando Split Sort paralelo...\n");
 
     double start = omp_get_wtime();
 
@@ -64,16 +70,17 @@ int main() {
 
     double end = omp_get_wtime();
 
-    printf("Tempo paralelo: %f segundos\n", end - start);
+    printf("Tempo paralelo: %.6f segundos\n", end - start);
 
-    // Verifica se ordenado
+    // Verifica se está ordenado corretamente
     int sorted = 1;
     for (int i = 1; i < n; i++) {
-        if (arr[i] < arr[i-1]) {
+        if (arr[i] < arr[i - 1]) {
             sorted = 0;
             break;
         }
     }
+
     printf("Vetor ordenado? %s\n", sorted ? "Sim" : "Não");
 
     free(arr);
